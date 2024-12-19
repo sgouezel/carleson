@@ -130,15 +130,39 @@ lemma measure_ball_le_pow_two' {x : X} {r : ℝ} {n : ℕ} :
   · exact ENNReal.ofReal_le_ofReal measure_ball_le_pow_two
   simp only [toReal_pow, coe_toReal, ge_iff_le, zero_le_coe, pow_nonneg]
 
+open Filter
+
+variable (A) in
+include A in
+lemma isOpenPosMeasure_of_isDoubling [NeZero μ] : IsOpenPosMeasure μ := by
+  refine ⟨fun U hU h'U ↦ ?_⟩
+  rcases h'U with ⟨x, xU⟩
+  rcases Metric.isOpen_iff.1 hU x xU with ⟨r, r_pos, hr⟩
+  have hmu : μ Set.univ ≠ 0 := NeZero.ne (μ Set.univ)
+  contrapose! hmu
+  have : μ (ball x r) = 0 := measure_mono_null hr hmu
+  have I n : μ (ball x (2 ^ n * r)) = 0 :=
+    le_antisymm ((measure_ball_le_pow_two').trans_eq (by simp [this])) bot_le
+  have : μ (⋃ n, ball x (2 ^ n * r)) = 0 :=
+    le_antisymm ((measure_iUnion_le _).trans_eq (by simp [I])) bot_le
+  apply measure_mono_null _ this
+  intro y hy
+  simp only [Set.mem_iUnion, mem_ball]
+  have : Tendsto (fun n ↦ 2 ^ n * r) atTop atTop := by
+    apply Filter.Tendsto.atTop_mul_const' r_pos
+    exact tendsto_pow_atTop_atTop_of_one_lt (_root_.one_lt_two)
+  rcases (Filter.tendsto_atTop.1 this (dist y x + 1)).exists with ⟨n, hn⟩
+  exact ⟨n, by linarith⟩
+
 /-- The blow-up factor of repeatedly increasing the size of balls. -/
 def As (A : ℝ≥0) (s : ℝ) : ℝ≥0 := A ^ ⌈Real.logb 2 s⌉₊
 
 variable (μ) in
-lemma As_pos [Nonempty X] [μ.IsOpenPosMeasure] (s : ℝ) : 0 < As A s :=
+lemma As_pos [Nonempty X] [IsOpenPosMeasure μ] (s : ℝ) : 0 < As A s :=
   pow_pos (A_pos μ) ⌈Real.logb 2 s⌉₊
 
 variable (μ) in
-lemma As_pos' [Nonempty X] [μ.IsOpenPosMeasure] (s : ℝ) : 0 < (As A s : ℝ≥0∞) := by
+lemma As_pos' [Nonempty X] [IsOpenPosMeasure μ] (s : ℝ) : 0 < (As A s : ℝ≥0∞) := by
   rw [ENNReal.coe_pos]; exact As_pos μ s
 
 /- Proof sketch: First do for powers of 2 by induction, then use monotonicity. -/

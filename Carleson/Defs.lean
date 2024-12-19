@@ -459,6 +459,8 @@ lemma τ_nonneg : 0 ≤ defaultτ a := (τ_pos X).le
 /-- `τ` as an element of `ℝ≥0`. -/
 def nnτ : ℝ≥0 := ⟨defaultτ a, τ_nonneg X⟩
 
+lemma nnτ_pos : 0 < nnτ X := τ_pos X
+
 lemma q_pos : 0 < q := zero_lt_one.trans (q_mem_Ioc X).1
 lemma q_nonneg : 0 ≤ q := (q_pos X).le
 
