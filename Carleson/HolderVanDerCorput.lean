@@ -23,9 +23,14 @@ lemma cutoff_comm : cutoff R t x y = cutoff R t y x := by
 
 lemma cutoff_Lipschitz (hR : 0 < R) (ht : 0 < t) :
     LipschitzWith ⟨(1 / (t * R)), by positivity⟩ (fun y ↦ cutoff R t x y) := by
-  -- Still working on this:
-  -- mathlib is missing a lemma Lipschitz.smul_const for CommGroupWithZero (or so).
-  sorry
+  apply LipschitzWith.const_max
+  apply LipschitzWith.of_le_add_mul
+  intro a b
+  simp only [one_div,  NNReal.coe_mk, tsub_le_iff_right, div_eq_inv_mul, mul_one]
+  have : (t * R) ⁻¹ * dist x b ≤ (t * R)⁻¹ * (dist x a + dist a b) := by
+    gcongr
+    exact dist_triangle _ _ _
+  linarith
 
 @[fun_prop]
 lemma cutoff_continuous (hR : 0 < R) (ht : 0 < t) : Continuous (fun y ↦ cutoff R t x y) :=
@@ -102,7 +107,7 @@ def C8_0_1 (a : ℝ) (t : ℝ≥0) : ℝ≥0 := ⟨2 ^ (4 * a) * t ^ (- (a + 1))
 
 /-- `ϕ ↦ \tilde{ϕ}` in the proof of Lemma 8.0.1. -/
 def holderApprox (R t : ℝ) (ϕ : X → ℂ) (x : X) : ℂ :=
-  (∫ y, cutoff R t x y * ϕ y) / (∫⁻ y, cutoff R t x y).toReal
+  (∫ y, cutoff R t x y * ϕ y) / (∫ y, (cutoff R t x y : ℝ))
 
 -- This surely exists in mathlib; how is it named?
 omit [TileStructure Q D κ S o] in
@@ -143,7 +148,14 @@ lemma dist_holderApprox_le {z : X} {R t : ℝ} (hR : 0 < R) {C : ℝ≥0}
     (ϕ : X → ℂ) (hϕ : ϕ.support ⊆ ball z R)
     (h2ϕ : HolderWith C nnτ ϕ) (ht : t ∈ Ioc (0 : ℝ) 1) (x : X) :
     dist (ϕ x) (holderApprox R t ϕ x) ≤ t ^ τ * C := by
+  have : (∫ y, cutoff R t x y * ϕ x) / (∫ y, (cutoff R t x y : ℂ)) = ϕ x := by
+    rw [integral_mul_right]
+    apply mul_div_cancel_left₀
+
   sorry
+
+
+#exit
 
 /-- Part of Lemma 8.0.1. -/
 lemma lipschitzWith_holderApprox {z : X} {R t : ℝ} (hR : 0 < R) {C : ℝ≥0}
