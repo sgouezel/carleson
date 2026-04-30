@@ -45,8 +45,8 @@
 	University of Bonn}
 \email{becker@math.uni-bonn.de}
 
-\author[]{Mar\'ia In\'es de Frutos-Fern\'andez}
-\address{Mar\'ia In\'es de Frutos-Fern\'andez,
+\author[]{Mar\'ia Inés de Frutos-Fernández}
+\address{Mar\'ia Inés de Frutos-Fernández,
 	University of Bonn}
 \email{midff@math.uni-bonn.de}
 
@@ -60,8 +60,8 @@
 	University of Bonn}
 \email{vdoorn@math.uni-bonn.de}
 
-\author[]{S\'ebastien Gou\"ezel}
-\address{S\'ebastien Gou\"ezel,
+\author[]{Sébastien Gouëzel}
+\address{Sébastien Gouëzel,
 	University of Rennes}
 \email{sebastien.gouezel@univ-rennes1.fr}
 
@@ -159,7 +159,7 @@ Michel Alexis,
 Bolton Bailey,
 Julian Berman,
 Joachim Breitner,
-Martin Dvoř\'ak,
+Martin Dvořák,
 Georges Gonthier,
 Aaron Hill,
 Austin Letson,
@@ -309,6 +309,24 @@ As a side effect of the formalization project, once the main result had been for
 
 
 \subsection{The \texttt{ProofData} pattern}\label{subsec:proof_data}
+
+Mathematical papers often contain standing assumptions, that are in place for
+all the statements in the paper, or in a specific section. This avoids
+tedious repetition in the statements, sometimes at a slight expense in
+readability as the reader has to locate the places where such standing
+assumptions are stated. Such a practice is especially important when the
+standing assumptions are lengthy and technical.
+
+The standing assumptions for the statement of the generalization of
+Carleson's theorem are quite formidable. We will not repeat them here,
+see~\cite[Theorem~1.1.1]{CarlesonBlueprint} for details. Let us just mention
+that they involve a metric space $X$, a measure $\mu$ on $X$ which is
+doubling for a constant $2^a$, a family $\Theta$ of functions from $X$ to
+$\R$, a distance on $\Theta$ satisfying $5$ properties as well as a
+cancellativity condition and a kernel $K : X \times X \to \R$ with
+Calder\'on-Zygmund like properties. The proofs fix even more additional data,
+notably two bounded measurable sets $F$ and $G$, an integrability exponent $q
+\in (1, 2]$,
 
 \subsection{Working with real numbers}\label{subsec:real}
 \begin{itemize}

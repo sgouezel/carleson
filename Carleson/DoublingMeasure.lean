@@ -32,16 +32,16 @@ lemma c_le_100 : 𝕔 ≤ 100 := exists_c.choose_spec.2
 -/
 
 /-- The constant `D` from (2.0.1). -/
-@[simp] def defaultD (a : ℕ) : ℕ := 2 ^ (𝕔 * a ^ 2)
+@[simp, implicit_reducible] def defaultD (a : ℕ) : ℕ := 2 ^ (𝕔 * a ^ 2)
 
 /-- `D` as an element of `ℝ≥0`. -/
 def nnD (a : ℕ) : ℝ≥0 := ⟨defaultD a, by simp⟩
 
 /-- The constant `κ` from (2.0.2). -/
-@[simp] def defaultκ (a : ℕ) : ℝ := 2 ^ (-10 * (a : ℝ))
+@[simp, implicit_reducible] def defaultκ (a : ℕ) : ℝ := 2 ^ (-10 * (a : ℝ))
 
 /-- The constant `Z` from (2.0.3). -/
-@[simp] def defaultZ (a : ℕ) : ℕ := 2 ^ (12 * a)
+@[simp, implicit_reducible] def defaultZ (a : ℕ) : ℕ := 2 ^ (12 * a)
 
 section ConstantBounds
 
