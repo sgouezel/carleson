@@ -2,6 +2,7 @@ module
 
 public import Carleson.ToMathlib.Data.ENNReal
 public import Mathlib.MeasureTheory.Function.LpSeminorm.Monotonicity
+public import Mathlib.MeasureTheory.Function.LpSeminorm.SMul
 
 public section
 
@@ -96,17 +97,26 @@ end
 
 section ENormedSpace
 
-variable {ε : Type*} [TopologicalSpace ε] [ESeminormedAddMonoid ε] [SMul ℝ≥0 ε] [ENormSMulClass ℝ≥0 ε]
-  {ε' : Type*} [TopologicalSpace ε'] [ESeminormedAddCommMonoid ε'] [Module ℝ≥0 ε'] [ENormSMulClass ℝ≥0 ε']
+variable {ε : Type*} [TopologicalSpace ε] [ESeminormedAddMonoid ε] [SMulWithZero ℝ≥0 ε]
+  [ENormSMulClass ℝ≥0 ε] [ContinuousConstSMul ℝ≥0 ε]
+  {ε' : Type*} [TopologicalSpace ε'] [ESeminormedAddCommMonoid ε'] [Module ℝ≥0 ε']
+  [ENormSMulClass ℝ≥0 ε'] [ContinuousConstSMul ℝ≥0 ε']
 
-open MeasureTheory
+open MeasureTheory Filter
 
--- TODO: put next to MeasureTheory.eLpNorm_const_smul_le (which perhaps can stay)
+-- TODO: put next to MeasureTheory.eLpNorm_const_smul_le' (which perhaps can stay)
 theorem eLpNorm_const_nnreal_smul_le
     {α : Type*} {m0 : MeasurableSpace α} {p : ℝ≥0∞}
     {μ : Measure α} {c : ℝ≥0} {f : α → ε} : eLpNorm (c • f) p μ ≤ ‖c‖ₑ * eLpNorm f p μ := by
-  apply eLpNorm_le_nnreal_smul_eLpNorm_of_ae_le_mul' (p := p) ?_
-  filter_upwards with x using le_of_eq (by simp [enorm_smul])
+  by_cases hf : AEStronglyMeasurable f μ
+  · apply eLpNorm_le_nnreal_smul_eLpNorm_of_ae_le_mul' (p := p) (hf.const_smul c)
+      (Eventually.of_forall fun _ => le_of_eq (enorm_smul ..))
+  rw [eLpNorm_of_not_aestronglyMeasurable hf]
+  rcases eq_or_ne c 0 with rfl | hc
+  · simp
+  · rw [ENNReal.mul_top (by simpa)]
+    exact le_top
+
 
 -- TODO: put next to eLpNorm_const_smul
 theorem eLpNorm_const_smul' {α : Type*} {m0 : MeasurableSpace α} {p : ℝ≥0∞}
@@ -117,24 +127,27 @@ theorem eLpNorm_const_smul' {α : Type*} {m0 : MeasurableSpace α} {p : ℝ≥0�
   refine le_antisymm eLpNorm_const_nnreal_smul_le <| ENNReal.mul_le_of_le_div' ?_
   simpa [ENNReal.div_eq_inv_mul, hc] using eLpNorm_const_nnreal_smul_le (c := c⁻¹) (f := c • f)
 
-set_option backward.isDefEq.respectTransparency false in
 theorem eLpNorm_top_smul
     {α : Type*} {m0 : MeasurableSpace α} {p : ℝ≥0∞}
-    {μ : Measure α} {f : α → ℝ≥0∞} (hf : AEStronglyMeasurable f μ) : eLpNorm (∞ • f) p μ = ⊤ * eLpNorm f p μ := by
+    {μ : Measure α} {f : α → ℝ≥0∞} (hf : AEStronglyMeasurable f μ) :
+    eLpNorm (∞ • f) p μ = ∞ * eLpNorm f p μ := by
   by_cases hp : p = 0
-  · simp [hp]
+  · classical
+    have : AEStronglyMeasurable (∞ • f) μ :=
+      (hf.aemeasurable.const_mul _).aestronglyMeasurable
+    simp [hp, hf, this]
   by_cases h : f =ᶠ[ae μ] 0
   · rw [eLpNorm_eq_zero_of_ae_zero h, mul_zero]
     apply eLpNorm_eq_zero_of_ae_zero
     filter_upwards [h] with x hx
     simpa
   · have : ¬ eLpNorm f p μ = 0 := by
-      rwa [eLpNorm_eq_zero_iff hf hp]
-    by_cases h' : eLpNorm f p μ = ⊤
+      rwa [eLpNorm_eq_zero_iff hp]
+    by_cases h' : eLpNorm f p μ = ∞
     · simp only [h', ne_eq, top_ne_zero, not_false_eq_true, mul_top]
       rw [eq_top_iff] at *
       apply h'.trans
-      apply eLpNorm_mono_enorm
+      apply eLpNorm_mono_enorm hf
       intro x
       simp only [enorm_eq_self, Pi.smul_apply, smul_eq_mul]
       exact ENNReal.le_mul_top_self
@@ -152,7 +165,7 @@ theorem eLpNorm_top_smul
         congr
         exact Eq.symm (coe_toNNReal h')
       _ ≤ eLpNorm (∞ • f) p μ := by
-        apply eLpNorm_mono_enorm
+        apply eLpNorm_mono_enorm (hf.const_smul _)
         intro x
         simp only [toNNReal_div, toNNReal_coe, Pi.smul_apply, enorm_smul, enorm_eq_self,
           smul_eq_mul, enorm_NNReal]
@@ -177,6 +190,7 @@ theorem eLpNorm_const_smul''' {α : Type*} {m0 : MeasurableSpace α} {p : ℝ≥
     exact MeasureTheory.eLpNorm_top_smul hf
   exact eLpNorm_const_smul'' hc
 
+omit [ContinuousConstSMul ℝ≥0 ε] in
 -- TODO: put next to the unprimed version; perhaps both should stay
 lemma eLpNormEssSup_const_nnreal_smul_le {α : Type*} {m0 : MeasurableSpace α} {μ : Measure α}
     {c : ℝ≥0} {f : α → ε} : eLpNormEssSup (c • f) μ ≤ ‖c‖ₑ * eLpNormEssSup f μ := by

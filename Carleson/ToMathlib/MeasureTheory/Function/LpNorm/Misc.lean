@@ -1,5 +1,6 @@
 module
 
+public import Carleson.ToMathlib.ENorm
 public import Carleson.ToMathlib.MeasureTheory.Measure.AEMeasurable
 public import Mathlib.MeasureTheory.Function.LpSeminorm.Basic
 
@@ -14,7 +15,6 @@ open scoped NNReal ENNReal
 variable {α ε : Type*} {m : MeasurableSpace α} [ENorm ε] {f : α → ε}
 
 namespace MeasureTheory
-
 
 lemma eLpNormEssSup_congr_measure {μ ν : Measure α} (h : ae ν = ae μ) :
     eLpNormEssSup f ν = eLpNormEssSup f μ := by
@@ -31,44 +31,40 @@ lemma eLpNormEssSup_withDensity {μ : Measure α} {d : α → ℝ≥0∞} (hd : 
   · rw [Measure.ae_le_iff_absolutelyContinuous]
     apply withDensity_absolutelyContinuous' hd  hd'
 
-lemma eLpNormEssSup_nnreal_scale_constant' {f : ℝ≥0 → ℝ≥0∞} {a : ℝ≥0} (h : a ≠ 0)
-  (hf : AEStronglyMeasurable f) :
+lemma eLpNormEssSup_nnreal_scale_constant' {f : ℝ≥0 → ℝ≥0∞} {a : ℝ≥0} (h : a ≠ 0) :
     eLpNormEssSup (fun x ↦ f (a * x)) volume = eLpNormEssSup f volume := by
-  calc _
-    _ = eLpNormEssSup (f ∘ fun x ↦ a * x) volume := by congr
-  rw [← eLpNormEssSup_map_measure _ (by fun_prop)]
-  · apply eLpNormEssSup_congr_measure
-    rw [NNReal.map_volume_mul_left h]
-    apply Measure.ae_ennreal_smul_measure_eq (by simpa)
-  · rw [NNReal.map_volume_mul_left h]
-    apply AEStronglyMeasurable.smul_measure hf
+  let g := (Homeomorph.smulOfNeZero a h : ℝ≥0 ≃ₜ ℝ≥0).toMeasurableEquiv
+  have : eLpNormEssSup (fun x ↦ f (a * x)) volume = eLpNormEssSup (f ∘ g) volume := rfl
+  rw [this, ← MeasurableEmbedding.eLpNormEssSup_map_measure g.measurableEmbedding]
+  apply eLpNormEssSup_congr_measure
+  simp only [Homeomorph.toMeasurableEquiv_coe, Homeomorph.smulOfNeZero_apply, smul_eq_mul, g,
+    NNReal.map_volume_mul_left h]
+  apply Measure.ae_ennreal_smul_measure_eq (by simpa)
 
-lemma eLpNorm_withDensity_scale_constant' {f : ℝ≥0 → ℝ≥0∞} (hf : AEStronglyMeasurable f) {p : ℝ≥0∞}
-  {a : ℝ≥0} (h : a ≠ 0) :
-  eLpNorm (fun t ↦ f (a * t)) p (volume.withDensity (fun (t : ℝ≥0) ↦ t⁻¹))
-    = eLpNorm f p (volume.withDensity (fun (t : ℝ≥0) ↦ t⁻¹))  := by
-  unfold eLpNorm
-  split_ifs with p_zero p_top
-  · rfl
-  · rw [eLpNormEssSup_withDensity (by fun_prop) (by simp),
-        eLpNormEssSup_withDensity (by fun_prop) (by simp),
-        eLpNormEssSup_nnreal_scale_constant' h hf]
-  · symm
-    rw [eLpNorm'_eq_lintegral_enorm, eLpNorm'_eq_lintegral_enorm,
-        lintegral_withDensity_eq_lintegral_mul₀' (by measurability)
-          (aeMeasurable_withDensity_inv ((hf.enorm).pow_const _)),
-        lintegral_withDensity_eq_lintegral_mul₀' (by measurability)]
-    rotate_left
-    · apply aeMeasurable_withDensity_inv
-        (((AEStronglyMeasurable.comp_aemeasurable _ (by fun_prop)).enorm).pow_const _)
-      rw [NNReal.map_volume_mul_left h]
-      apply hf.smul_measure
-    simp only [enorm_eq_self, Pi.mul_apply, one_div]
-    rw [← lintegral_nnreal_scale_constant' h, ← lintegral_const_mul' _ _ (by simp)]
-    have : ∀ {t : ℝ≥0}, (ENNReal.ofNNReal t)⁻¹ = a * (ENNReal.ofNNReal (a * t))⁻¹ := by
-      intro t
-      rw [ENNReal.coe_mul, ENNReal.mul_inv (by simp) (by simp), ← mul_assoc,
-          ENNReal.mul_inv_cancel (by simpa) (by simp), one_mul]
-    simp_rw [← mul_assoc, ← this]
+lemma eLpNorm_withDensity_scale_constant' {f : ℝ≥0 → ℝ≥0∞} {p : ℝ≥0∞} {a : ℝ≥0} (h : a ≠ 0) :
+    eLpNorm (fun t ↦ f (a * t)) p (volume.withDensity (fun (t : ℝ≥0) ↦ t⁻¹))
+      = eLpNorm f p (volume.withDensity (fun (t : ℝ≥0) ↦ t⁻¹)) := by
+  let g := (Homeomorph.smulOfNeZero a h : ℝ≥0 ≃ₜ ℝ≥0).toMeasurableEquiv
+  have : (fun t ↦ f (a * t)) = f ∘ g := rfl
+  simp_rw [this]
+  rw [← MeasurableEmbedding.eLpNorm_map_measure g.measurableEmbedding]
+  congr 1
+  ext s hs
+  simp only [g.measurable, hs, Measure.map_apply, MeasurableEquiv.measurableSet_preimage,
+    withDensity_apply]
+  rw [← lintegral_indicator (g.measurable hs)]
+  have A x : (g ⁻¹' s).indicator (fun (t : ℝ≥0) ↦ ((↑t)⁻¹ : ℝ≥0∞)) x =
+      a * (s.indicator (fun (t : ℝ≥0) ↦ ((↑t)⁻¹ : ℝ≥0∞))) (a * x) := by
+    simp only [Set.indicator, Set.mem_preimage]
+    by_cases hx : a * x ∈ s
+    · have : x ∈ ⇑g ⁻¹' s := hx
+      simp only [this, ↓reduceIte, hx, ENNReal.coe_mul]
+      rw [ENNReal.mul_inv (by simp [h]) (by simp), ← mul_assoc,
+        ENNReal.mul_inv_cancel (by simp [h]) (by simp), one_mul]
+    · have : ¬ (x ∈ ⇑g ⁻¹' s) := hx
+      simp [hx, this]
+  simp only [A]
+  rw [lintegral_const_mul _ (by fun_prop), lintegral_nnreal_scale_constant' h,
+    lintegral_indicator hs]
 
 end MeasureTheory

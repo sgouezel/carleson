@@ -378,9 +378,9 @@ lemma wnorm'_le_eLpNorm' (hf : AEStronglyMeasurable f μ) {p : ℝ} (p0 : 0 < p)
 lemma distribution_lt_top (hf : MemLp f p μ) (p_pos : 0 < p) (p_ne_top : p ≠ ∞)
     {t : ℝ≥0} (ht : 0 < t) :
     distribution f t μ < ∞ := by
-  have := wnorm'_le_eLpNorm' hf.1 (toReal_pos p_pos.ne' p_ne_top)
-  rw [← eLpNorm_eq_eLpNorm' p_pos.ne' p_ne_top] at this
-  have := this.trans_lt hf.2
+  have := wnorm'_le_eLpNorm' hf.aestronglyMeasurable (toReal_pos p_pos.ne' p_ne_top)
+  rw [← eLpNorm_eq_eLpNorm' p_pos.ne' p_ne_top hf.aestronglyMeasurable] at this
+  have := this.trans_lt hf
   rw [wnorm', iSup_lt_iff] at this
   rcases this with ⟨b,b_lt_top, h⟩
   have := (h t).trans_lt b_lt_top
@@ -396,14 +396,16 @@ lemma distribution_lt_top (hf : MemLp f p μ) (p_pos : 0 < p) (p_ne_top : p ≠ 
     rw [h]
     simp only [zero_lt_top]
 
-lemma wnorm_le_eLpNorm (hf : AEStronglyMeasurable f μ) {p : ℝ≥0∞} (hp : 0 < p) :
+lemma wnorm_le_eLpNorm {p : ℝ≥0∞} (hp : 0 < p) :
     wnorm f p μ ≤ eLpNorm f p μ := by
+  by_cases hf : AEStronglyMeasurable f μ; swap
+  · simp [eLpNorm_of_not_aestronglyMeasurable, hf]
   by_cases h : p = ⊤
-  · simp [h, wnorm, eLpNorm]
-  · simpa [h, wnorm, eLpNorm, hp.ne'] using wnorm'_le_eLpNorm' hf (toReal_pos hp.ne' h)
+  · simp [h, wnorm, eLpNorm, hf]
+  · simpa [h, wnorm, eLpNorm, hp.ne', hf] using wnorm'_le_eLpNorm' hf (toReal_pos hp.ne' h)
 
 lemma MemLp.memWLp (hp : 0 < p) (hf : MemLp f p μ) : MemWLp f p μ :=
-  ⟨hf.1, wnorm_le_eLpNorm hf.1 hp |>.trans_lt hf.2⟩
+  ⟨hf.aestronglyMeasurable, wnorm_le_eLpNorm hp |>.trans_lt hf⟩
 
 end ContinuousENorm
 
@@ -447,7 +449,7 @@ variable [TopologicalSpace ε₁] [ContinuousENorm ε₁] [TopologicalSpace ε�
 
 lemma HasWeakType.memWLp (h : HasWeakType T p p' μ ν c) (hf₁ : MemLp f₁ p μ)
     (hc : c < ⊤ := by finiteness) : MemWLp (T f₁) p' ν :=
-  ⟨(h f₁ hf₁).1, h f₁ hf₁ |>.2.trans_lt <| mul_lt_top hc hf₁.2⟩
+  ⟨(h f₁ hf₁).1, h f₁ hf₁ |>.2.trans_lt <| mul_lt_top hc hf₁⟩
 
 lemma HasWeakType.toReal {T : (α → ε₁) → (α' → ℝ≥0∞)} (h : HasWeakType T p p' μ ν c) :
     HasWeakType (T · · |>.toReal) p p' μ ν c :=
@@ -523,7 +525,7 @@ variable [TopologicalSpace ε₁] [ESeminormedAddMonoid ε₁] [TopologicalSpace
 lemma HasBoundedWeakType.memWLp (h : HasBoundedWeakType T p p' μ ν c)
     (hf₁ : BoundedFiniteSupport f₁ μ) (hc : c < ⊤ := by finiteness) :
     MemWLp (T f₁) p' ν :=
-  ⟨(h f₁ hf₁).1, h f₁ hf₁ |>.2.trans_lt <| mul_lt_top hc (hf₁.memLp p).2⟩
+  ⟨(h f₁ hf₁).1, h f₁ hf₁ |>.2.trans_lt <| mul_lt_top hc (hf₁.memLp p)⟩
 
 lemma HasWeakType.hasBoundedWeakType (h : HasWeakType T p p' μ ν c) :
     HasBoundedWeakType T p p' μ ν c :=
@@ -540,11 +542,11 @@ variable [TopologicalSpace ε₁] [ContinuousENorm ε₁] [TopologicalSpace ε�
 
 lemma HasStrongType.memLp (h : HasStrongType T p p' μ ν c) (hf₁ : MemLp f₁ p μ)
     (hc : c < ⊤ := by finiteness) : MemLp (T f₁) p' ν :=
-  ⟨(h f₁ hf₁).1, h f₁ hf₁ |>.2.trans_lt <| mul_lt_top hc hf₁.2⟩
+  h f₁ hf₁ |>.2.trans_lt <| mul_lt_top hc hf₁
 
 lemma HasStrongType.hasWeakType (hp' : 0 < p')
     (h : HasStrongType T p p' μ ν c) : HasWeakType T p p' μ ν c :=
-  fun f hf ↦ ⟨(h f hf).1, wnorm_le_eLpNorm (h f hf).1 hp' |>.trans (h f hf).2⟩
+  fun f hf ↦ ⟨(h f hf).1, wnorm_le_eLpNorm hp' |>.trans (h f hf).2⟩
 
 lemma HasStrongType.toReal {T : (α → ε₁) → (α' → ℝ≥0∞)} (h : HasStrongType T p p' μ ν c) :
     HasStrongType (T · · |>.toReal) p p' μ ν c :=
@@ -589,7 +591,7 @@ variable [TopologicalSpace ε₁] [ESeminormedAddMonoid ε₁] [TopologicalSpace
 lemma HasBoundedStrongType.memLp (h : HasBoundedStrongType T p p' μ ν c)
     (hf₁ : BoundedFiniteSupport f₁ μ) (hc : c < ⊤ := by finiteness) :
     MemLp (T f₁) p' ν :=
-  ⟨(h f₁ hf₁).1, h f₁ hf₁ |>.2.trans_lt <| mul_lt_top hc (hf₁.memLp _).2⟩
+  h f₁ hf₁ |>.2.trans_lt <| mul_lt_top hc (hf₁.memLp _)
 
 lemma HasStrongType.hasBoundedStrongType (h : HasStrongType T p p' μ ν c) :
     HasBoundedStrongType T p p' μ ν c :=
@@ -599,7 +601,7 @@ lemma HasBoundedStrongType.hasBoundedWeakType (hp' : 0 < p')
     (h : HasBoundedStrongType T p p' μ ν c) :
     HasBoundedWeakType T p p' μ ν c :=
   fun f hf ↦
-    ⟨(h f hf).1, wnorm_le_eLpNorm (h f hf).1 hp' |>.trans (h f hf).2⟩
+    ⟨(h f hf).1, wnorm_le_eLpNorm hp' |>.trans (h f hf).2⟩
 
 set_option backward.isDefEq.respectTransparency false in
 lemma HasBoundedStrongType.const_smul {T : (α → ε₁) → α' → ℝ≥0∞}
@@ -616,7 +618,7 @@ variable {f g : α → ε}
 section
 
 variable {ε ε' : Type*} [TopologicalSpace ε] [ENorm ε]
-variable [TopologicalSpace ε'] [ESeminormedAddCommMonoid ε'] [SMul ℝ≥0 ε']
+variable [TopologicalSpace ε'] [ESeminormedAddCommMonoid ε'] [SMulWithZero ℝ≥0 ε']
   [ENormSMulClass ℝ≥0 ε']
 
 -- TODO: this lemma and its primed version could be unified using a `NormedSemifield` typeclass
@@ -869,7 +871,7 @@ lemma eLpNorm_pow_eq_distribution {f : α → ε} (hf : AEStronglyMeasurable f �
     eLpNorm f p μ ^ (p : ℝ) =
     ∫⁻ t in Ioi (0 : ℝ), p * ENNReal.ofReal (t ^ ((p : ℝ) - 1)) * distribution f (.ofReal t) μ := by
   have h2p : 0 < (p : ℝ) := hp
-  simp_rw [eLpNorm_nnreal_eq_eLpNorm' hp.ne', eLpNorm', one_div, ← ENNReal.rpow_mul,
+  simp_rw [eLpNorm_nnreal_eq_eLpNorm' hp.ne' hf, eLpNorm', one_div, ← ENNReal.rpow_mul,
     inv_mul_cancel₀ h2p.ne', ENNReal.rpow_one, lintegral_norm_pow_eq_distribution hf h2p,
     ENNReal.ofReal_mul zero_le_coe, ofReal_coe_nnreal]
 

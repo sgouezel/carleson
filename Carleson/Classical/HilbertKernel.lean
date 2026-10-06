@@ -179,10 +179,9 @@ lemma Hilbert_kernel_regularity_main_part {y y' : ℝ} (yy'nonneg : 0 ≤ y ∧ 
                   norm_cast
                   exact le_of_eq (norm_exp_ofReal_mul_I _)
                 · simp only [Complex.norm_mul, norm_I, one_mul]
-                  apply mul_le_one₀
-                  on_goal 1 => norm_cast
-                  rw [Real.norm_of_nonpos] <;> linarith
-                  · exact norm_nonneg _
+                  apply (mul_le_of_le_one_left (by positivity) ?_).trans ?_
+                  · norm_cast
+                    rw [Real.norm_of_nonpos] <;> linarith
                   rw [mul_comm, ←neg_mul]
                   norm_cast
                   exact le_of_eq (norm_exp_ofReal_mul_I _)

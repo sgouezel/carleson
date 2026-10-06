@@ -48,13 +48,16 @@ variable {X E : Type*} [TopologicalSpace X] [MeasurableSpace X] {μ ν : Measure
 variable {α : Type*} {m0 : MeasurableSpace α} {μ ν : Measure α}
   {ε : Type*} [TopologicalSpace ε] [ContinuousENorm ε] {f : α → ε} in
 theorem eLpNorm_mono_ac (hμν : ν ≪ μ) : eLpNorm f ∞ ν ≤ eLpNorm f ∞ μ := by
-  simp_rw [eLpNorm_exponent_top, MeasureTheory.eLpNormEssSup_mono_measure _ hμν]
+  by_cases hf : AEStronglyMeasurable f μ
+  · simp_rw [eLpNorm_exponent_top hf,
+      eLpNorm_exponent_top (hf.mono_ac hμν), MeasureTheory.eLpNormEssSup_mono_measure _ hμν]
+  · simp [eLpNorm_of_not_aestronglyMeasurable, hf]
 
 variable {α : Type*} {m0 : MeasurableSpace α} {μ ν : Measure α}
   {ε : Type*} [TopologicalSpace ε] [ContinuousENorm ε] {f : α → ε} in
 theorem MemLp.mono_ac (hf : MemLp f ∞ μ) (hμν : ν ≪ μ) :
     MemLp f ∞ ν :=
-⟨hf.1.mono_ac hμν, eLpNorm_mono_ac hμν |>.trans_lt hf.2⟩
+  eLpNorm_mono_ac hμν |>.trans_lt hf
 
 variable {α : Type*} {m0 : MeasurableSpace α} {μ : Measure α}
   {ε : Type*} [TopologicalSpace ε] [ContinuousENorm ε]
@@ -66,11 +69,11 @@ theorem MemLp.comp_quasiMeasurePreserving
 -- maybe don't upstream
 variable {α : Type*} {m0 : MeasurableSpace α} {μ ν : Measure α}
   {E : Type*} [NormedAddCommGroup E] {f : α → E} in
-theorem MemLp.ae_norm_le (hf : MemLp f ∞ μ) : ∀ᵐ x ∂μ, ‖f x‖ ≤ (eLpNorm f ⊤ μ).toReal := by
+theorem MemLp.ae_norm_le (hf : MemLp f ∞ μ) : ∀ᵐ x ∂μ, ‖f x‖ ≤ (eLpNorm f ∞ μ).toReal := by
   filter_upwards [ae_le_eLpNormEssSup (f := f)] with x hx
   simp_rw [← toReal_enorm]
-  apply ENNReal.toReal_mono hf.2.ne
-  simp [hx]
+  apply ENNReal.toReal_mono hf.ne
+  exact hx.trans eLpNormEssSup_le_eLpNorm_top
 
 variable [TopologicalSpace E] [ENorm E] [Zero E] in
 /- currently we assume that the functions are a.e.-bounded, since that plays better with mathlib.
@@ -78,7 +81,6 @@ Since it might be nicer to work with suprema instead of essential suprema, we ne
 everywhere-boundedness in one place.
 TODO: Refactor this back to every boundedness (plus measurability)
 -/
-
 /-- Bounded compactly supported measurable functions -/
 @[fun_prop]
 structure BoundedCompactSupport (f : X → E) (μ : Measure X := by volume_tac) :
@@ -201,7 +203,7 @@ variable {f g : X → 𝕜}
 @[fun_prop]
 theorem mul_bdd_right (hf : BoundedCompactSupport f μ) (hg : MemLp g ∞ μ) :
     BoundedCompactSupport (f * g) μ where
-  memLp_top := hg.mul hf.memLp_top
+  memLp_top := hf.memLp_top.mul hg
   hasCompactSupport := hf.hasCompactSupport.mul_right
 
 @[fun_prop]
@@ -219,7 +221,7 @@ theorem mul (hf : BoundedCompactSupport f μ) (hg : BoundedCompactSupport g μ) 
 theorem integrable_mul (hf : BoundedCompactSupport f μ) (hg : Integrable g μ) :
     Integrable (f * g) μ := by
   rw [← memLp_one_iff_integrable] at hg ⊢
-  exact hg.mul hf.memLp_top
+  exact hf.memLp_top.mul hg
 
 @[fun_prop]
 theorem integrable_fun_mul (hf : BoundedCompactSupport f μ) (hg : Integrable g μ) :
@@ -232,23 +234,9 @@ lemma _root_.HasCompactSupport.star (hf : HasCompactSupport f) :
     HasCompactSupport fun i ↦ star (f i) :=
   (hasCompactSupport_comp_left (by simp)).2 hf
 
-omit [TopologicalSpace X] in
-lemma _root_.AEStronglyMeasurable.star (hf : AEStronglyMeasurable f μ) :
-    AEStronglyMeasurable (star f) μ :=
-  RCLike.continuous_conj.comp_aestronglyMeasurable hf
-
-omit [TopologicalSpace X] in
-lemma eLpNorm_star : eLpNorm (star f) ⊤ μ = eLpNorm f ⊤ μ := by
-  simp_rw [Star.star]
-  rw [MeasureTheory.eLpNorm_congr_enorm_ae (g := f)]
-  simp
-
 @[fun_prop]
 theorem conj (hf : BoundedCompactSupport f μ) : BoundedCompactSupport (star f) μ where
-  memLp_top := by
-    refine ⟨hf.aestronglyMeasurable.star, ?_⟩
-    rw [eLpNorm_star]
-    have := hf.memLp_top; finiteness
+  memLp_top := hf.memLp_top.star
   hasCompactSupport := by simpa using! hf.hasCompactSupport.star
 
 -- This lemma is defeq to `BoundedCompactSupport.conj`, but `starRingEnd` and `conj` are both
@@ -272,7 +260,7 @@ end Mul
 /-- If `‖f‖` is bounded by `g` and `g` is bounded compactly supported, then so is `f`. -/
 theorem mono {g : X → ℝ≥0∞} (hg : BoundedCompactSupport g μ) (hf : AEStronglyMeasurable f μ)
     (hfg : ∀ x, ‖f x‖ₑ ≤ g x) : BoundedCompactSupport f μ where
-  memLp_top := ⟨hf, eLpNorm_mono_enorm hfg |>.trans_lt hg.memLp_top.eLpNorm_lt_top⟩
+  memLp_top := eLpNorm_mono_enorm hf hfg |>.trans_lt hg.memLp_top.eLpNorm_lt_top
   hasCompactSupport := by
     refine hg.hasCompactSupport.mono ?_
     by_contra h
@@ -284,7 +272,7 @@ theorem mono {g : X → ℝ≥0∞} (hg : BoundedCompactSupport g μ) (hf : AESt
 -- use `mono` preferably
 theorem mono_norm {g : X → ℝ} (hg : BoundedCompactSupport g μ) (hf : AEStronglyMeasurable f μ)
     (hfg : ∀ x, ‖f x‖ ≤ g x) : BoundedCompactSupport f μ where
-  memLp_top := ⟨hf, eLpNorm_mono_real hfg |>.trans_lt hg.memLp_top.eLpNorm_lt_top⟩
+  memLp_top := eLpNorm_mono_real hf hfg |>.trans_lt hg.memLp_top.eLpNorm_lt_top
   hasCompactSupport := by
     refine hg.hasCompactSupport.mono ?_
     by_contra h
@@ -357,7 +345,7 @@ end Sum
 
 section Prod
 
-variable {Y : Type*} [MeasureSpace Y] {f : X → 𝕜} {g : Y → 𝕜} {ν : Measure Y}
+variable {Y : Type*} [MeasureSpace Y] {f : X → 𝕜} {g : Y → 𝕜} {ν : Measure Y} [SFinite ν]
 variable [TopologicalSpace Y]
 variable [R1Space (X × Y)]
 
@@ -373,7 +361,7 @@ theorem prod_mul (hf : BoundedCompactSupport f μ) (hg : BoundedCompactSupport g
     have h2g : MemLp (fun z : X × Y ↦ g z.2) ∞ (μ.prod ν) :=
       hg.memLp_top.comp_quasiMeasurePreserving Measure.quasiMeasurePreserving_snd
     -- todo: reorder arguments of `mul`
-    exact h2g.mul (r := ∞) h2f
+    exact h2f.mul (r := ∞) h2g
   hasCompactSupport := by
     -- todo: separate out as lemmas
     apply HasCompactSupport.intro <| hf.hasCompactSupport.prod hg.hasCompactSupport
