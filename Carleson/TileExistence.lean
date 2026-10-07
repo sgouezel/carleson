@@ -264,13 +264,13 @@ def Encodable.linearOrder {α : Type*} (i : Encodable α) : LinearOrder α :=
   LinearOrder.lift' (i.encode) (i.encode_injective)
 
 instance {k : ℤ} : LinearOrder (Yk X k) := (Yk_encodable X k).linearOrder
-instance {k : ℤ} : WellFoundedLT (Yk X k) where
-  wf := by
-    apply (@OrderEmbedding.wellFounded (Yk X k) ℕ)
-    · use ⟨(Yk_encodable X k).encode,(Yk_encodable X k).encode_injective⟩
-      simp only [Embedding.coeFn_mk, Subtype.forall]
-      exact fun i hi j hj ↦ by rfl
-    exact wellFounded_lt
+
+instance {k : ℤ} : WellFoundedLT (Yk X k) := by
+  apply (@OrderEmbedding.wellFounded (Yk X k) ℕ)
+  · use ⟨(Yk_encodable X k).encode,(Yk_encodable X k).encode_injective⟩
+    simp only [Embedding.coeFn_mk, Subtype.forall]
+    exact fun i hi j hj ↦ by rfl
+  exact wellFounded_lt
 
 local instance {k : ℤ} : SizeOf (Yk X k) where
   sizeOf := (Yk_encodable X k).encode
@@ -913,9 +913,9 @@ lemma K_pos : 0 < (K' : ℝ) := by
   rw [const_K]
   simp only [Nat.cast_pow, Nat.cast_ofNat, Nat.ofNat_pos, pow_pos]
 
-variable (X) in
-@[nolint unusedArguments] -- TODO: fix overlapping instance warning; this will also fix the linter
-def C4_1_7 [ProofData a q K σ₁ σ₂ F G] : ℝ≥0 := As (defaultA a) (2 ^ 4)
+def C4_1_7 (X : Type*) {a : ℕ} {q : ℝ} {K : X → X → ℂ} {σ₁ σ₂ : X → ℤ} {F G : Set X}
+    [PseudoMetricSpace X] [ProofData a q K σ₁ σ₂ F G] : ℝ≥0 :=
+  As (defaultA a) (2 ^ 4)
 
 variable (X) in
 lemma C4_1_7_eq : C4_1_7 X = 2 ^ (4 * a) := by

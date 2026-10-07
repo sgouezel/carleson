@@ -37,7 +37,10 @@ def eLorentzNorm' (f : α → ε) (p : ℝ≥0∞) (q : ℝ≥0∞) (μ : Measur
 
 @[simp]
 lemma eLorentzNorm'_exponent_zero' {f : α → ε} {μ : Measure α} : eLorentzNorm' f p 0 μ = 0 := by
-  simp [eLorentzNorm']
+  simp only [eLorentzNorm', ENNReal.inv_zero, ENNReal.toReal_top, ENNReal.rpow_zero,
+    ENNReal.toReal_inv, one_mul, eLpNorm, ↓reduceIte, ite_eq_left_iff, ENNReal.top_ne_zero,
+    imp_false, not_not]
+  fun_prop
 
 lemma eLorentzNorm'_eq_integral_distribution_rpow {_ : MeasurableSpace α} {f : α → ε}
   {μ : Measure α} :
@@ -45,7 +48,7 @@ lemma eLorentzNorm'_eq_integral_distribution_rpow {_ : MeasurableSpace α} {f : 
   unfold eLorentzNorm'
   simp only [inv_one, ENNReal.toReal_one, ENNReal.rpow_one, ENNReal.toReal_inv]
   congr
-  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal (by norm_num) (by norm_num)]
+  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal (by norm_num) (by norm_num) (by fun_prop)]
   rw [lintegral_withDensity_eq_lintegral_mul₀' (by measurability)
     (by apply aeMeasurable_withDensity_inv; apply AEMeasurable.pow_const; apply AEStronglyMeasurable.enorm; apply
       aestronglyMeasurable_iff_aemeasurable.mpr; apply Measurable.aemeasurable; measurability)]
@@ -81,7 +84,7 @@ lemma eLorentzNorm_exponent_zero {f : α → ε} : eLorentzNorm f 0 q μ = 0 := 
 
 @[simp]
 lemma eLorentzNorm_exponent_zero' {f : α → ε} : eLorentzNorm f p 0 μ = 0 := by
-  simp [eLorentzNorm, eLorentzNorm']
+  simp [eLorentzNorm]
 
 @[simp]
 lemma eLorentzNorm_exponent_top_top {f : α → ε} : eLorentzNorm f ∞ ∞ μ = eLpNormEssSup f μ := by

@@ -41,11 +41,22 @@ theorem setLIntegral_Ioc_add_eq {f : ℝ → ℝ≥0∞} (hf : Periodic f T) (t 
     (hf.comp enorm).map_vadd_zmultiples]
 
 --TODO: the assumption `p ≠ ⊤` is not necessary; this case should be proved as well
-theorem eLpNorm {T : ℝ} {s t : ℝ} {f : ℝ → ℂ}
-  (periodic_f : f.Periodic T)
-  {p : ℝ≥0∞} (hp : p ≠ ⊤) :
+-- this should be deduced from a more general statement for `IsAddFundamentalDomain`
+-- like `MeasureTheory.IsFundamentalDomain.aestronglyMeasurable_on_iff`
+theorem eLpNorm {T : ℝ} {s t : ℝ} {f : ℝ → ℂ} (periodic_f : f.Periodic T)
+    {p : ℝ≥0∞} (hp : p ≠ ⊤) :
     eLpNorm f p (volume.restrict (Ioc t (t + T))) = eLpNorm f p (volume.restrict (Ioc s (s + T))) := by
-  unfold MeasureTheory.eLpNorm
+  wlog! hT : 0 < T
+  · rw [Ioc_eq_empty (by simpa), Ioc_eq_empty (by simpa)]
+  have A : AEStronglyMeasurable f (volume.restrict (Ioc t (t + T))) ↔
+      AEStronglyMeasurable f (volume.restrict (Ioc s (s + T))) := by
+    apply IsAddFundamentalDomain.aestronglyMeasurable_on_iff (G := AddSubgroup.zmultiples T)
+    exacts [isAddFundamentalDomain_Ioc hT t, isAddFundamentalDomain_Ioc hT s,
+      periodic_f.map_vadd_zmultiples]
+  by_cases hf : AEStronglyMeasurable f (volume.restrict (Ioc t (t + T))); swap
+  · rw [eLpNorm_of_not_aestronglyMeasurable hf, eLpNorm_of_not_aestronglyMeasurable]
+    simpa [A] using hf
+  simp only [MeasureTheory.eLpNorm, hf, ↓reduceIte, A.1 hf]
   split_ifs with p_zero --p_top
   · rfl
   --· sorry
@@ -57,6 +68,7 @@ theorem eLpNorm {T : ℝ} {s t : ℝ} {f : ℝ → ℂ}
     congr 2
     apply periodic_f
 
+-- This one and the next one should also have general versions for fundamental domains
 theorem aestronglyMeasurable {t T : ℝ} [hT : Fact (0 < T)] {f : ℝ → ℂ}
   (periodic_f : f.Periodic T) (hf : AEStronglyMeasurable f (volume.restrict (Ioc t (t + T)))) :
     AEStronglyMeasurable f := by
