@@ -1,7 +1,7 @@
 module
 
 public import Carleson.ToMathlib.MeasureTheory.Function.LorentzSeminorm.Basic
-public import Carleson.ToMathlib.MeasureTheory.Function.LpSeminorm.CompareExp
+public import Mathlib.MeasureTheory.Function.LpSeminorm.CompareExp
 public import Carleson.ToMathlib.MeasureTheory.Function.LpSeminorm.TriangleInequality
 public import Carleson.ToMathlib.MeasureTheory.Integral.Misc
 
@@ -276,7 +276,7 @@ theorem eLorentzNorm_add_le [SigmaFinite μ] [ContinuousAdd ε] (one_le_q : 1 �
     _ ≤ eLpNorm (lorentz_helper (f + g) p q μ) q.conjExponent * eLpNorm (fun (t : ℝ≥0) ↦ t ^ (p⁻¹.toReal - q⁻¹.toReal) * rearrangement f t μ) q
         + eLpNorm (lorentz_helper (f + g) p q μ) q.conjExponent * eLpNorm (fun (t : ℝ≥0) ↦ t ^ (p⁻¹.toReal - q⁻¹.toReal) * rearrangement g t μ) q := by
       gcongr <;>
-      · apply eLpNorm_le_eLpNorm_mul_eLpNorm_of_enorm' (by fun_prop) (by fun_prop) (HolderConjugate.conjExponent one_le_q).symm
+      · apply eLpNorm_le_eLpNorm_mul_eLpNorm_ennreal (by fun_prop) (by fun_prop) (HolderConjugate.conjExponent one_le_q).symm
     _ = eLorentzNorm' f p q μ + eLorentzNorm' g p q μ := by
       rw [eLpNorm_lorentz_helper p_zero p_top one_le_q q_top hfg hfg', one_mul, one_mul,
         ← eLorentzNorm'_eq' p_zero p_top, ← eLorentzNorm'_eq' p_zero p_top]

@@ -262,7 +262,7 @@ lemma calculation_16 [PseudoMetricSpace X] [ProofData a q K σ₁ σ₂ F G] (s 
   · linarith
 
 lemma calculation_7_7_4 [PseudoMetricSpace X] [ProofData a q K σ₁ σ₂ F G] {n : ℕ} :
-  (1:ℝ) ≤ 2 ^ (Z * (n + 1)) - 4 := by
+    (1 : ℝ) ≤ 2 ^ (Z * (n + 1)) - 4 := by
   rw [le_sub_iff_add_le]
   trans 2 ^ 3
   · norm_num
@@ -274,7 +274,6 @@ lemma calculation_7_7_4 [PseudoMetricSpace X] [ProofData a q K σ₁ σ₂ F G] 
     trans 2 ^ 12
     · norm_num
     gcongr
-    · norm_num
     lia
   exact Nat.mul_le_mul this (Nat.le_add_left 1 n)
 
