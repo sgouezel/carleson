@@ -997,7 +997,7 @@ lemma exists_hasStrongType_real_interpolation_aux₀ {p₀ p₁ q₀ q₁ p q : 
   have := h₂T hf; fun_prop
 
 /-- The estimate for the real interpolation theorem in case `p₀ < p₁`. -/
-lemma exists_hasStrongType_real_interpolation_aux {p₀ p₁ q₀ q₁ p q : ℝ≥0∞} {A : ℝ≥0}
+lemma exists_hasStrongType_real_interpolation_aux [SFinite μ] {p₀ p₁ q₀ q₁ p q : ℝ≥0∞} {A : ℝ≥0}
     [TopologicalSpace E₁] [ESeminormedAddMonoid E₁]
     [TopologicalSpace E₂] [ContinuousENorm E₂] (hA : 0 < A)
     (hp₀ : p₀ ∈ Ioc 0 q₀) (hp₁ : p₁ ∈ Ioc 0 q₁) (hp₀p₁ : p₀ < p₁) (hq₀q₁ : q₀ ≠ q₁)
@@ -1016,8 +1016,8 @@ lemma exists_hasStrongType_real_interpolation_aux {p₀ p₁ q₀ q₁ p q : ℝ
   have hq₁ : 0 < q₁ := pos_of_rb_Ioc hp₁
   rcases (eq_zero_or_pos (eLpNorm f p μ)) with hF | hF
   · refine le_of_eq_of_le ?_ zero_le
-    apply exists_hasStrongType_real_interpolation_aux₀ (hp := hp) (hq := hq) <;> try assumption
-  · let spf := spf_ch (toReal_mem_Ioo ht) hq₀q₁ hp₀.1 hq₀ hp₁.1 hq₁ hp₀p₁.ne hC₀ hC₁ ⟨hF, hf.2⟩
+    apply exists_hasStrongType_real_interpolation_aux₀ (hp := hp) (hq := hq) <;> assumption
+  · let spf := spf_ch (toReal_mem_Ioo ht) hq₀q₁ hp₀.1 hq₀ hp₁.1 hq₁ hp₀p₁.ne hC₀ hC₁ ⟨hF, hf⟩
     apply combine_estimates₁ <;> try assumption
     on_goal 1 => unfold spf
     rfl
@@ -1127,7 +1127,7 @@ lemma exists_hasStrongType_real_interpolation_aux₂ {f : α → E₁}
   rcases (eq_zero_or_pos (eLpNorm f p μ)) with hF | snorm_pos
   · refine le_of_eq_of_le ?_ zero_le
     apply exists_hasStrongType_real_interpolation_aux₀ (hp := hp) (hq := hq) <;> try assumption
-  · have hF : eLpNorm f p μ ∈ Ioo 0 ⊤ := ⟨snorm_pos, hf.2⟩
+  · have hF : eLpNorm f p μ ∈ Ioo 0 ⊤ := ⟨snorm_pos, hf⟩
     have M_pos : 0 < M := toReal_pos (d_pos hC₀ hC₁ hF).ne' (d_ne_top hC₀ hC₁ hF)
     have coe_q : ENNReal.ofReal q.toReal = q :=
     ofReal_toReal_eq_iff.mpr (interp_exp_ne_top hq₀q₁.ne ht hq)
@@ -1258,7 +1258,8 @@ lemma exists_hasStrongType_real_interpolation_aux₃ {p₀ p₁ q₀ q₁ p q : 
 
 /-- The main estimate for the real interpolation theorem, before taking roots, combining
 the cases `p₀ ≠ p₁` and `p₀ = p₁`. -/
-lemma exists_hasStrongType_real_interpolation_aux₄ {p₀ p₁ q₀ q₁ p q : ℝ≥0∞} {A : ℝ≥0} (hA : 0 < A)
+lemma exists_hasStrongType_real_interpolation_aux₄ [SFinite μ]
+    {p₀ p₁ q₀ q₁ p q : ℝ≥0∞} {A : ℝ≥0} (hA : 0 < A)
     [TopologicalSpace E₁] [ESeminormedAddMonoid E₁]
     [TopologicalSpace E₂] [ContinuousENorm E₂]
     (hp₀ : p₀ ∈ Ioc 0 q₀) (hp₁ : p₁ ∈ Ioc 0 q₁) (hq₀q₁ : q₀ ≠ q₁)
@@ -1440,7 +1441,7 @@ lemma Subadditive_trunc_from_SubadditiveOn_Lp₀p₁ {p₀ p₁ p : ℝ≥0∞}
           (switch_exponents ht hp)).1.le⟩
 
 /-- Marcinkiewicz real interpolation theorem -/
-theorem exists_hasStrongType_real_interpolation {p₀ p₁ q₀ q₁ p q : ℝ≥0∞}
+theorem exists_hasStrongType_real_interpolation [SFinite μ] {p₀ p₁ q₀ q₁ p q : ℝ≥0∞}
     [TopologicalSpace E₁] [ESeminormedAddMonoid E₁]
     [TopologicalSpace E₂] [ContinuousENorm E₂]
     (hp₀ : p₀ ∈ Ioc 0 q₀) (hp₁ : p₁ ∈ Ioc 0 q₁) (hq₀q₁ : q₀ ≠ q₁)
