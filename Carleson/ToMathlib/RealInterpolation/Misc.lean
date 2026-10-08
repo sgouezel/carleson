@@ -578,9 +578,15 @@ lemma trunc_mono {f : α → ε} {a b : ℝ≥0∞} (hab : a ≤ b) {x : α} : �
   · exact le_rfl
 
 /-- The norm of the truncation is monotone in the truncation parameter -/
-lemma eLpNorm_trunc_mono (hf : AEStronglyMeasurable f μ) :
-    Monotone fun s ↦ eLpNorm (trunc f s) p μ :=
-  fun a b hab ↦ eLpNorm_mono_enorm (by fun_prop) (fun x ↦ trunc_mono hab)
+lemma eLpNorm_trunc_mono :
+    Monotone fun s ↦ eLpNorm (trunc f s) p μ := by
+  intro a b hab
+  by_cases hf : AEStronglyMeasurable (trunc f b) μ; swap
+  · simp [eLpNorm_of_not_aestronglyMeasurable hf]
+  apply eLpNorm_mono_enorm ?_ (fun x ↦ trunc_mono hab)
+  convert hf.trunc (t := a) using 1
+  ext x
+  grind [trunc]
 
 lemma trunc_buildup_enorm {x : α} :
     ‖trunc f t x‖ₑ + ‖truncCompl f t x‖ₑ = ‖f x‖ₑ := by
@@ -621,9 +627,9 @@ lemma eLpNorm_truncCompl_anti (hf : eLpNorm f 1 μ ≠ ⊤) (mf : AEStronglyMeas
 
 /-- The norm of the truncation is meaurable in the truncation parameter -/
 @[fun_prop]
-lemma eLpNorm_trunc_measurable (hf : AEStronglyMeasurable f μ) :
+lemma eLpNorm_trunc_measurable :
     Measurable (fun s ↦ eLpNorm (trunc f s) p μ) :=
-  (eLpNorm_trunc_mono hf).measurable
+  eLpNorm_trunc_mono.measurable
 
 /-- The norm of the complement of the truncation is measurable in the truncation parameter -/
 @[fun_prop]

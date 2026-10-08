@@ -242,7 +242,7 @@ lemma const (T : (α → ε₁) → ε) (P : (α → ε₁) → Prop)
     (h_add : ∀ {f g}, P f → P g → ‖T (f + g)‖ₑ ≤ ‖T f‖ₑ + ‖T g‖ₑ)
     (h_smul : ∀ f {c : ℝ≥0}, P f → T (c • f) = c • T f) :
     SublinearOn (fun u (_ : α') ↦ T u) P 1 := by
-  refine ⟨SubadditiveOn.const h_add, fun f c hf ↦ ?_⟩
+  refine ⟨SubadditiveOn.const (T := fun f ↦ ‖T f‖ₑ) h_add, fun f c hf ↦ ?_⟩
   ext x
   simp [h_smul f hf]
 
@@ -428,9 +428,9 @@ lemma estimate_norm_rpow_range_operator {q : ℝ} {f : α → E₁}
     [TopologicalSpace E₁] [ESeminormedAddMonoid E₁] [TopologicalSpace E₂] [ContinuousENorm E₂]
     (hq : 0 < q) (tc : StrictRangeToneCouple) {A : ℝ≥0} (hA : 0 < A)
     (ht : SubadditiveTrunc T A f ν) (hTf : AEStronglyMeasurable (T f) ν) :
-  ∫⁻ x : α', ‖T f x‖ₑ ^ q ∂ν ≤
-  ENNReal.ofReal ((2 * A)^q * q) * ∫⁻ s, distribution (T (trunc f (tc.ton s))) s ν * s^(q - 1) +
-  distribution (T (truncCompl f (tc.ton s))) s ν * s ^ (q - 1) := by
+    ∫⁻ x : α', ‖T f x‖ₑ ^ q ∂ν ≤ ENNReal.ofReal ((2 * A)^q * q) *
+        ∫⁻ s, distribution (T (trunc f (tc.ton s))) s ν * s^(q - 1) +
+      distribution (T (truncCompl f (tc.ton s))) s ν * s ^ (q - 1) := by
   rw [rewrite_norm_func hq hA hTf]
   refine mul_le_mul' (le_refl _) (lintegral_mono_ae ?_)
   filter_upwards [ae_in_Ioo_zero_top] with a ha
@@ -523,7 +523,7 @@ lemma simplify_factor₀ {D : ℝ≥0∞}
     (hq : q⁻¹ = (1 - t) * q₀⁻¹ + t * q₁⁻¹)
     (hC₀ : 0 < C₀) (hC₁ : 0 < C₁)
     (hF : eLpNorm f p μ ∈ Ioo 0 ⊤)
-    (hD : D = @d _ E₁ _ p p₀ q₀ p₁ q₁ C₀ C₁ μ _ f) :
+    (hD : D = @d _ E₁ _ p p₀ q₀ p₁ q₁ C₀ C₁ μ _ f _) :
     C₀ ^ q₀.toReal * (eLpNorm f p μ ^ p.toReal) ^ (q₀.toReal / p₀.toReal) *
     (D ^ (q.toReal - q₀.toReal)) =
     C₀ ^ ((1 - t).toReal * q.toReal) * C₁ ^ (t.toReal * q.toReal) * eLpNorm f p μ ^ q.toReal := by
@@ -578,7 +578,7 @@ lemma simplify_factor₁ {D : ℝ≥0∞}
     (hq : q⁻¹ = (1 - t) * q₀⁻¹ + t * q₁⁻¹)
     (hC₀ : 0 < C₀) (hC₁ : 0 < C₁)
     (hF : eLpNorm f p μ ∈ Ioo 0 ⊤)
-    (hD : D = @d _ E₁ _ p p₀ q₀ p₁ q₁ C₀ C₁ μ _ f) :
+    (hD : D = @d _ E₁ _ p p₀ q₀ p₁ q₁ C₀ C₁ μ _ f _) :
     C₁ ^ q₁.toReal * (eLpNorm f p μ ^ p.toReal) ^ (q₁.toReal / p₁.toReal) *
     (D ^ (q.toReal - q₁.toReal)) =
     C₀ ^ ((1 - t).toReal * q.toReal) * C₁ ^ (t.toReal * q.toReal) * eLpNorm f p μ ^ q.toReal := by
@@ -695,13 +695,15 @@ lemma support_sigma_finite_from_MemLp
       contradiction
   rw [← this]
   apply support_sigma_finite_of_lintegrable
-  · exact hf.1.enorm.pow_const _
+  · exact hf.aestronglyMeasurable.enorm.pow_const _
   · unfold g
-    have obs := hf.2
-    unfold eLpNorm eLpNorm' at obs
+    have obs := hf
+    simp [memLp_iff, eLpNorm, eLpNorm', hf.aestronglyMeasurable] at obs
     split_ifs at obs
     · contradiction
-    · exact lintegral_rpow_enorm_lt_top_of_eLpNorm'_lt_top (toReal_pos hp' hp) obs
+    · apply lintegral_rpow_enorm_lt_top_of_eLpNorm'_lt_top (toReal_pos hp' hp)
+      rw [← eLpNorm_eq_eLpNorm' hp' hp hf.aestronglyMeasurable]
+      exact hf
 
 -- lemma support_sfinite_from_MemLp
 --     [MeasurableSpace E₁] [NormedAddCommGroup E₁] (hf : MemLp f p μ)
@@ -711,26 +713,26 @@ lemma support_sigma_finite_from_MemLp
 --   exact instSFiniteOfSigmaFinite
 
 lemma combine_estimates₀ {A : ℝ≥0} (hA : 0 < A)
-  [TopologicalSpace E₁] [ESeminormedAddMonoid E₁]
-  [TopologicalSpace E₂] [ContinuousENorm E₂]
-  {spf : ScaledPowerFunction}
-  (hp₀ : p₀ ∈ Ioc 0 q₀) (hp₁ : p₁ ∈ Ioc 0 q₁) (ht : t ∈ Ioo 0 1)
-  (hp₀p₁ : p₀ < p₁) (hq₀q₁ : q₀ ≠ q₁)
-  (hp : p⁻¹ = (1 - t) * p₀⁻¹ + t * p₁⁻¹)
-  (hq : q⁻¹ = (1 - t) * q₀⁻¹ + t * q₁⁻¹)
-  (hf : MemLp f p μ) (hT : SubadditiveTrunc T A f ν)
-  (hC₀ : 0 < C₀) (hC₁ : 0 < C₁)
-  (hF : eLpNorm f p μ ∈ Ioo 0 ⊤)
-  (hspf : spf = spf_ch (toReal_mem_Ioo ht) hq₀q₁ hp₀.1 (lt_of_lt_of_le hp₀.1 hp₀.2) hp₁.1
-      (lt_of_lt_of_le hp₁.1 hp₁.2) hp₀p₁.ne hC₀ hC₁ hF)
-  (h₁T : HasWeakType T p₁ q₁ μ ν C₁)
-  (h₀T : HasWeakType T p₀ q₀ μ ν C₀)
-  (h₂T : PreservesAEStrongMeasurability T p (ν := ν) (μ := μ)) :
-    ∫⁻ x , ‖T f x‖ₑ ^ q.toReal ∂ν ≤
-    ENNReal.ofReal ((2 * A) ^ q.toReal * q.toReal) *
-    ((if q₁ < ⊤ then 1 else 0) * ENNReal.ofReal |q.toReal - q₁.toReal|⁻¹ +
-    (if q₀ < ⊤ then 1 else 0) * ENNReal.ofReal |q.toReal - q₀.toReal|⁻¹) *
-    C₀ ^ ((1 - t).toReal * q.toReal) * C₁ ^ (t.toReal * q.toReal) * eLpNorm f p μ ^ q.toReal := by
+    [TopologicalSpace E₁] [ESeminormedAddMonoid E₁]
+    [TopologicalSpace E₂] [ContinuousENorm E₂] [SFinite μ]
+    {spf : ScaledPowerFunction}
+    (hp₀ : p₀ ∈ Ioc 0 q₀) (hp₁ : p₁ ∈ Ioc 0 q₁) (ht : t ∈ Ioo 0 1)
+    (hp₀p₁ : p₀ < p₁) (hq₀q₁ : q₀ ≠ q₁)
+    (hp : p⁻¹ = (1 - t) * p₀⁻¹ + t * p₁⁻¹)
+    (hq : q⁻¹ = (1 - t) * q₀⁻¹ + t * q₁⁻¹)
+    (hf : MemLp f p μ) (hT : SubadditiveTrunc T A f ν)
+    (hC₀ : 0 < C₀) (hC₁ : 0 < C₁)
+    (hF : eLpNorm f p μ ∈ Ioo 0 ⊤)
+    (hspf : spf = spf_ch (toReal_mem_Ioo ht) hq₀q₁ hp₀.1 (lt_of_lt_of_le hp₀.1 hp₀.2) hp₁.1
+        (lt_of_lt_of_le hp₁.1 hp₁.2) hp₀p₁.ne hC₀ hC₁ hF)
+    (h₁T : HasWeakType T p₁ q₁ μ ν C₁)
+    (h₀T : HasWeakType T p₀ q₀ μ ν C₀)
+    (h₂T : PreservesAEStrongMeasurability T p (ν := ν) (μ := μ)) :
+      ∫⁻ x , ‖T f x‖ₑ ^ q.toReal ∂ν ≤
+      ENNReal.ofReal ((2 * A) ^ q.toReal * q.toReal) *
+      ((if q₁ < ⊤ then 1 else 0) * ENNReal.ofReal |q.toReal - q₁.toReal|⁻¹ +
+      (if q₀ < ⊤ then 1 else 0) * ENNReal.ofReal |q.toReal - q₀.toReal|⁻¹) *
+      C₀ ^ ((1 - t).toReal * q.toReal) * C₁ ^ (t.toReal * q.toReal) * eLpNorm f p μ ^ q.toReal := by
   have one_le_p₀ := hp₀.1
   have one_le_p1 := hp₁.1
   have p₀pos : 0 < p₀ := hp₀.1
@@ -811,7 +813,7 @@ lemma combine_estimates₀ {A : ℝ≥0} (hA : 0 < A)
           · exact hp₁.2
           · exact ne_top_of_Ioc hp₁ is_q₁top
           · exact is_q₁top.ne_top
-          · exact hf.1
+          · exact hf.aestronglyMeasurable
           · rw [hspf]; rfl
         · simp
       · split_ifs with is_q₀top
@@ -821,7 +823,7 @@ lemma combine_estimates₀ {A : ℝ≥0} (hA : 0 < A)
           · exact hp₀.2
           · exact ne_top_of_Ioc hp₀ is_q₀top
           · exact is_q₀top.ne_top
-          · exact hf.1
+          · exact hf.aestronglyMeasurable
           · rw [hspf]; rfl
         · simp
   _ = (if q₁ < ⊤ then 1 else 0) *
@@ -857,7 +859,7 @@ lemma combine_estimates₀ {A : ℝ≥0} (hA : 0 < A)
       · simp
   _ = _ := by split_ifs <;> ring
 
-lemma combine_estimates₁ {A : ℝ≥0} (hA : 0 < A)
+lemma combine_estimates₁ {A : ℝ≥0} (hA : 0 < A) [SFinite μ]
     [TopologicalSpace E₁] [ESeminormedAddMonoid E₁]
     [TopologicalSpace E₂] [ContinuousENorm E₂]
     {spf : ScaledPowerFunction}
@@ -885,10 +887,10 @@ lemma combine_estimates₁ {A : ℝ≥0} (hA : 0 < A)
   refine le_of_rpow_le q'pos ?_
   calc
   _ = ∫⁻ x , ‖T f x‖ₑ ^ q.toReal ∂ν := by
-    unfold eLpNorm eLpNorm'
-    split_ifs <;> [contradiction; rw [one_div, ENNReal.rpow_inv_rpow q'pos.ne']]
+    simp only [eLpNorm, h₂T hf, ↓reduceIte, eLpNorm', one_div, ite_pow]
+    split_ifs <;> [contradiction; rw [ENNReal.rpow_inv_rpow q'pos.ne']]
   _ ≤ _ := by
-    apply combine_estimates₀ (hT := hT) (p := p) <;> try assumption
+    apply combine_estimates₀ (hT := hT) (p := p) (μ := μ) <;> try assumption
   _ = _ := by
     repeat rw [ENNReal.mul_rpow_of_nonneg _ _ q'pos.le]
     rw [ENNReal.ofReal_mul' q'pos.le]
@@ -899,7 +901,8 @@ lemma combine_estimates₁ {A : ℝ≥0} (hA : 0 < A)
       exact ofReal_toReal_eq_iff.mpr q_ne_top
     · rw [toReal_inv, ENNReal.rpow_inv_rpow q'pos.ne']
 
-lemma simplify_factor₃ [TopologicalSpace E₁] [ESeminormedAddMonoid E₁] (hp₀ : 0 < p₀) (hp₀' : p₀ ≠ ⊤) (ht : t ∈ Ioo 0 1)
+lemma simplify_factor₃ [TopologicalSpace E₁] [ESeminormedAddMonoid E₁]
+    (hp₀ : 0 < p₀) (hp₀' : p₀ ≠ ⊤) (ht : t ∈ Ioo 0 1)
     (hp : p⁻¹ = (1 - t) * p₀⁻¹ + t * p₁⁻¹) (hp₀p₁ : p₀ = p₁) :
     C₀ ^ q₀.toReal * (eLpNorm f p μ ^ p.toReal) ^ (q₀.toReal / p₀.toReal) =
     (↑C₀ * eLpNorm f p μ) ^ q₀.toReal := by
@@ -943,7 +946,7 @@ lemma simplify_factor₄ {D : ℝ≥0∞} [TopologicalSpace E₁] [ESeminormedAd
     (hq : q⁻¹ = (1 - t) * q₀⁻¹ + t * q₁⁻¹)
     (hC₀ : 0 < C₀) (hC₁ : 0 < C₁)
     (hF : eLpNorm f p μ ∈ Ioo 0 ⊤)
-    (hD : D = @d _ E₁ _ p p₀ q₀ p₁ q₁ C₀ C₁ μ _ f) :
+    (hD : D = @d _ E₁ _ p p₀ q₀ p₁ q₁ C₀ C₁ μ _ f _) :
     (↑C₀ * eLpNorm f p μ) ^ q₀.toReal * (D ^ (q.toReal - q₀.toReal)) =
     C₀ ^ ((1 - t).toReal * q.toReal) * C₁ ^ (t.toReal * q.toReal) * eLpNorm f p μ ^ q.toReal := by
   have p₀pos : 0 < p₀ := hp₀.1
@@ -960,7 +963,7 @@ lemma simplify_factor₅ {D : ℝ≥0∞} [TopologicalSpace E₁] [ESeminormedAd
     (hq : q⁻¹ = (1 - t) * q₀⁻¹ + t * q₁⁻¹)
     (hC₀ : 0 < C₀) (hC₁ : 0 < C₁)
     (hF : eLpNorm f p μ ∈ Ioo 0 ⊤)
-    (hD : D = @d _ E₁ _ p p₀ q₀ p₁ q₁ C₀ C₁ μ _ f) :
+    (hD : D = @d _ E₁ _ p p₀ q₀ p₁ q₁ C₀ C₁ μ _ f _) :
     (↑C₁ * eLpNorm f p μ) ^ q₁.toReal * (D ^ (q.toReal - q₁.toReal)) =
     C₀ ^ ((1 - t).toReal * q.toReal) * C₁ ^ (t.toReal * q.toReal) * eLpNorm f p μ ^ q.toReal := by
   have p₁ne_top : p₁ ≠ ⊤ := ne_top_of_le_ne_top hq₁' hp₁.2
@@ -983,13 +986,14 @@ lemma exists_hasStrongType_real_interpolation_aux₀ {p₀ p₁ q₀ q₁ p q : 
   have q₀pos : 0 < q₀ := pos_of_rb_Ioc hp₀
   have q₁pos : 0 < q₁ := pos_of_rb_Ioc hp₁
   have q_pos : 0 < q := interpolated_pos' q₀pos q₁pos (ne_top_of_Ioo ht) hq
-  have hf₂ : eLpNorm f p₀ μ = 0 := eLpNorm_eq_zero_of_eLpNorm_eq_zero hf.1 p_pos.ne' hF
-  have hf₁ : MemLp f p₀ μ := ⟨hf.1, by rw [hf₂]; exact zero_lt_top⟩
+  have hf₂ : eLpNorm f p₀ μ = 0 :=
+    eLpNorm_eq_zero_of_eLpNorm_eq_zero hf.aestronglyMeasurable p_pos.ne' hF
+  have hf₁ : MemLp f p₀ μ := by simp [memLp_iff, hf₂]
   have := (h₀T f hf₁).2
   rw [hf₂, mul_zero] at this
   have wnorm_0 : wnorm (T f) q₀ ν = 0 := nonpos_iff_eq_zero.mp this
-  have : (fun y ↦ ‖(T f) y‖ₑ) =ᵐ[ν] 0 := (wnorm_eq_zero_iff q₀pos.ne').mp wnorm_0
-  rwa [← eLpNorm_enorm, eLpNorm_eq_zero_iff _ q_pos.ne']
+  have : (fun y ↦ ‖(T f) y‖ₑ) =ᵐ[ν] 0 := (wnorm_eq_zero_iff (h₂T hf) q₀pos.ne').mp wnorm_0
+  rwa [← eLpNorm_enorm, eLpNorm_eq_zero_iff q_pos.ne']
   have := h₂T hf; fun_prop
 
 /-- The estimate for the real interpolation theorem in case `p₀ < p₁`. -/
